@@ -52,7 +52,7 @@ cp .env.example .env
 - `TELEGRAM_BOT_TOKEN` - Your Telegram bot token
 - `TELEGRAM_CHAT_ID` - Your Telegram chat ID
 - `DEFAULT_SYMBOL` - Trading pair (e.g., BTCUSDT)
-- `INTERVAL` - Candle interval (e.g., 1h, 4h, 1d)
+- `INTERVAL` - Candle interval (1m, 5m, 15m, 30m, 60m, 4h, 1d, 1w, 1M)
 - `FAST_EMA` - Fast EMA period (default: 12)
 - `SLOW_EMA` - Slow EMA period (default: 26)
 - `LOG_LEVEL` - Logging level (default: INFO)
@@ -115,7 +115,12 @@ mexc-ema-bot/
 │       ├── __main__.py          # Main entry point for python -m bot
 │       ├── main.py              # Main bot class and entry function
 │       ├── config.py            # Configuration management
-│       └── logger.py            # Logging setup
+│       ├── logger.py            # Logging setup
+│       └── mexc_client.py       # MEXC API client
+├── tests/
+│   └── test_mexc_client.py      # Unit tests for MEXC client
+├── examples/
+│   └── test_mexc_client.py      # Example usage of MEXC client
 ├── requirements.txt             # Python dependencies
 ├── .env.example                 # Example environment variables
 ├── Makefile                     # Development commands
@@ -145,6 +150,84 @@ Main bot class that:
 - Provides a main execution loop
 - Implements proper error handling
 
+### MEXC Client (`mexc_client.py`)
+
+Comprehensive client for interacting with MEXC REST API:
+
+#### Features
+- **Async HTTP Client**: Built on `httpx` for high-performance async operations
+- **Kline Data Fetching**: Retrieve candlestick data for any trading pair and interval
+- **Robust Error Handling**: 
+  - Automatic retry with exponential backoff
+  - Rate limit detection and handling
+  - Network error recovery
+- **Rate Limiting**: Respects MEXC API rate limits
+- **Structured Logging**: Detailed logging of all operations and errors
+- **Data Models**: Type-safe `KlineData` dataclass for candlestick data
+
+#### Components
+
+##### MexcClient
+Main client class for API interactions:
+- `get_klines()` - Fetch historical kline/candlestick data
+- `get_latest_price()` - Get the latest close price for a symbol
+- Configurable retry logic and timeouts
+- Context manager support for proper resource cleanup
+
+##### KlinePoller
+Continuous polling loop for real-time data:
+- Polls for new kline data at configurable intervals
+- Invokes callback functions with new data
+- Supports both sync and async callbacks
+- Tracks latest data to avoid duplicate processing
+- Graceful start/stop with proper cleanup
+
+##### KlineData
+Structured dataclass representing candlestick data:
+- All OHLCV (Open, High, Low, Close, Volume) fields
+- Timestamp conversion utilities
+- Easy serialization to dict
+- Type-safe construction from API responses
+
+#### Usage Example
+
+```python
+from bot.mexc_client import MexcClient, KlinePoller
+
+# Simple data fetch
+async with MexcClient() as client:
+    klines = await client.get_klines("BTCUSDT", "60m", limit=100)
+    for kline in klines:
+        print(f"{kline.close_time_dt}: {kline.close}")
+
+# Continuous polling
+def on_new_data(klines):
+    latest = klines[-1]
+    print(f"New price: {latest.close}")
+
+async with MexcClient() as client:
+    poller = KlinePoller(
+        client=client,
+        symbol="BTCUSDT",
+        interval="60m",
+        poll_interval=60,
+        callback=on_new_data
+    )
+    await poller.start()
+    # ... bot logic ...
+    await poller.stop()
+```
+
+#### Configuration Options
+
+The client supports the following configuration via environment variables:
+- `MEXC_BASE_URL` - API base URL (default: https://api.mexc.com)
+- `KLINE_LIMIT` - Number of klines per request (default: 100, max: 1000)
+- `POLL_INTERVAL` - Seconds between polls (default: 60)
+- `MAX_RETRIES` - Max retry attempts for failed requests (default: 3)
+- `RETRY_DELAY` - Initial retry delay in seconds (default: 5)
+- `REQUEST_TIMEOUT` - Request timeout in seconds (default: 30)
+
 ## Signal Handling
 
 The bot gracefully handles shutdown signals:
@@ -157,10 +240,34 @@ Log messages are output to console and optionally to a file. The log level can b
 
 Example log file location: `logs/bot.log` (when enabled via `LOG_FILE` environment variable)
 
+## Testing
+
+### Run Unit Tests
+
+```bash
+# Run all tests
+make test
+
+# Run specific test file
+pytest tests/test_mexc_client.py -v
+
+# Run with coverage
+pytest --cov=bot tests/
+```
+
+### Run Examples
+
+The `examples/` directory contains example scripts demonstrating client usage:
+
+```bash
+# Make sure .env is configured first
+python examples/test_mexc_client.py
+```
+
 ## Future Implementation
 
 The following features are marked for implementation:
-- MEXC API connection and data streaming
+- ✅ MEXC API connection and data streaming
 - EMA indicator calculation
 - Signal generation and trading logic
 - Telegram notification system

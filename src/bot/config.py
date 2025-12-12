@@ -50,6 +50,16 @@ class BotConfig:
         self.fast_ema: int = self._get_env_as_int("FAST_EMA", default=12)
         self.slow_ema: int = self._get_env_as_int("SLOW_EMA", default=26)
 
+        # MEXC Client Configuration
+        self.mexc_base_url: str = self._get_required_env(
+            "MEXC_BASE_URL", default="https://api.mexc.com"
+        )
+        self.kline_limit: int = self._get_env_as_int("KLINE_LIMIT", default=100)
+        self.poll_interval: int = self._get_env_as_int("POLL_INTERVAL", default=60)
+        self.max_retries: int = self._get_env_as_int("MAX_RETRIES", default=3)
+        self.retry_delay: int = self._get_env_as_int("RETRY_DELAY", default=5)
+        self.request_timeout: int = self._get_env_as_int("REQUEST_TIMEOUT", default=30)
+
         # Logging Configuration
         self.log_level: str = self._get_required_env("LOG_LEVEL", default="INFO")
         self.log_file: Optional[str] = os.getenv("LOG_FILE")
@@ -99,6 +109,32 @@ class BotConfig:
             return int(value)
         except ValueError:
             raise ValueError(f"Environment variable '{key}' must be an integer, got: {value}")
+
+    @staticmethod
+    def _get_env_as_float(key: str, default: Optional[float] = None) -> float:
+        """
+        Get an environment variable as a float.
+
+        Args:
+            key: Environment variable name
+            default: Default value if not found
+
+        Returns:
+            Float value
+
+        Raises:
+            ValueError: If value cannot be converted to float
+        """
+        value = os.getenv(key)
+        if value is None:
+            if default is None:
+                raise ValueError(f"Required environment variable '{key}' is not set")
+            return default
+
+        try:
+            return float(value)
+        except ValueError:
+            raise ValueError(f"Environment variable '{key}' must be a float, got: {value}")
 
     def __repr__(self) -> str:
         """Return string representation of config (without sensitive data)."""

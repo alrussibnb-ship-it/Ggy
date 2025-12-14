@@ -1,53 +1,41 @@
-.PHONY: help install install-dev run test lint format clean
+# Simple development Makefile for dual-stack application
+
+.PHONY: help setup install dev redis-start redis-stop
 
 help:
-	@echo "MEXC EMA Bot - Available commands:"
-	@echo ""
-	@echo "  install           Install production dependencies"
-	@echo "  install-dev       Install development dependencies"
-	@echo "  run              Run the bot (requires .env file)"
-	@echo "  test             Run tests"
-	@echo "  lint             Run linting checks (flake8)"
-	@echo "  format           Format code with black and isort"
-	@echo "  clean            Remove cache and build artifacts"
-	@echo "  setup-env        Create .env file from .env.example"
-	@echo ""
+	@echo "Available commands:"
+	@echo "  setup       - Setup environment files and directories"
+	@echo "  install     - Install all dependencies"
+	@echo "  dev-backend - Start backend development server"
+	@echo "  dev-frontend- Start frontend development server"
+	@echo "  redis-start - Start Redis server"
+	@echo "  redis-stop  - Stop Redis server"
 
-install:
-	pip install -r requirements.txt
+setup:
+	@echo "Setting up environment..."
+	@cp .env.example .env 2>/dev/null || true
+	@cp frontend/.env.local.example frontend/.env.local 2>/dev/null || true
+	@mkdir -p storage/uploads storage/media storage/outputs
+	@echo "Setup complete!"
 
-install-dev:
-	pip install -r requirements.txt
+install: setup
+	@echo "Installing dependencies..."
+	@echo "Backend: pip install -r backend/requirements.txt"
+	@echo "Frontend: npm install (in frontend directory)"
 
-run:
-	python -m bot.main
+dev-backend:
+	@echo "Starting backend server..."
+	@cd backend && python -m uvicorn main:app --host 0.0.0.0 --port 8000 --reload
 
-test:
-	pytest -v
+dev-frontend:
+	@echo "Starting frontend server..."
+	@cd frontend && npm run dev
 
-lint:
-	flake8 src/
-	black --check src/
-	isort --check-only src/
+redis-start:
+	@echo "Starting Redis..."
+	@docker run -d --name audio-processing-redis -p 6379:6379 redis:7-alpine || echo "Redis already running or Docker not available"
 
-format:
-	black src/
-	isort src/
-
-clean:
-	find . -type d -name __pycache__ -exec rm -rf {} + 2>/dev/null || true
-	find . -type f -name "*.pyc" -delete
-	find . -type d -name .pytest_cache -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name .mypy_cache -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name *.egg-info -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name dist -exec rm -rf {} + 2>/dev/null || true
-	find . -type d -name build -exec rm -rf {} + 2>/dev/null || true
-
-setup-env:
-	@if [ ! -f .env ]; then \
-		cp .env.example .env; \
-		echo "Created .env file from .env.example"; \
-		echo "Please update .env with your actual credentials"; \
-	else \
-		echo ".env file already exists"; \
-	fi
+redis-stop:
+	@echo "Stopping Redis..."
+	@docker stop audio-processing-redis 2>/dev/null || true
+	@docker rm audio-processing-redis 2>/dev/null || true

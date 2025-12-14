@@ -1,282 +1,373 @@
-# MEXC EMA Bot
+# Dual-Stack Audio Processing Application
 
-An automated trading bot for the MEXC exchange using Exponential Moving Average (EMA) indicators.
+A full-stack application for audio/video transcription and translation, featuring FastAPI backend, Celery workers, and Next.js frontend.
 
-## Features
+## 🚀 Features
 
-- Automated trading based on EMA crossover signals
-- Real-time market data from MEXC exchange
-- Telegram notifications for trading signals
-- Configurable EMA periods (fast and slow)
-- Centralized logging with configurable levels
-- Graceful shutdown handling
+- **Audio/Video Transcription**: Powered by faster-whisper for high-quality speech-to-text
+- **Multi-language Translation**: Support for multiple translation providers (Google Translate, Transformers)
+- **Subtitle Generation**: Create SRT and WebVTT subtitle files
+- **Real-time Task Processing**: Asynchronous processing with Celery and Redis
+- **Modern Web Interface**: Clean, responsive UI built with Next.js and Tailwind CSS
+- **Docker Support**: Complete containerization for easy deployment
+- **GPU Acceleration**: Optional GPU support for faster processing
 
-## Requirements
+## 🏗️ Architecture
 
-- Python 3.8+
-- pip (Python package manager)
-
-## Installation
-
-### 1. Clone the repository
-
-```bash
-git clone <repository-url>
-cd mexc-ema-bot
+```
+├── backend/              # FastAPI application
+│   ├── api/routes/       # API endpoints
+│   ├── core/            # Core configuration
+│   ├── workers/         # Celery workers
+│   └── main.py          # FastAPI app entry point
+├── frontend/            # Next.js application
+│   ├── pages/           # Next.js pages
+│   ├── components/      # React components
+│   └── utils/           # Utility functions
+├── storage/             # File storage directories
+│   ├── uploads/         # User uploaded files
+│   ├── media/           # Permanent media storage
+│   └── outputs/         # Processing outputs
+├── docker-compose.yml   # Multi-service Docker setup
+├── .env.example         # Environment configuration
+└── Makefile            # Development commands
 ```
 
-### 2. Install dependencies
+## 🛠️ Technology Stack
+
+### Backend
+- **FastAPI** - Modern Python web framework
+- **Celery** - Distributed task queue
+- **Redis** - Message broker and result backend
+- **faster-whisper** - Speech recognition
+- **FFmpeg** - Audio/video processing
+- **SRT** - Subtitle processing
+
+### Frontend
+- **Next.js 14** - React framework
+- **TypeScript** - Type safety
+- **Tailwind CSS** - Styling
+- **React Hooks** - State management
+
+## 📦 Quick Start
+
+### Prerequisites
+
+- Python 3.11+
+- Node.js 18+
+- Redis (via Docker or native installation)
+- FFmpeg (system installation)
+
+### Option 1: Using Make (Recommended)
+
+1. **Clone and setup**:
+   ```bash
+   git clone <repository-url>
+   cd dual-stack-repo
+   make install
+   ```
+
+2. **Start development servers**:
+   ```bash
+   make dev
+   ```
+
+3. **Access the application**:
+   - Frontend: http://localhost:3000
+   - Backend API: http://localhost:8000
+   - API Documentation: http://localhost:8000/docs
+
+### Option 2: Manual Setup
+
+1. **Backend setup**:
+   ```bash
+   cd backend
+   python -m venv venv
+   source venv/bin/activate  # On Windows: venv\Scripts\activate
+   pip install -r requirements.txt
+   ```
+
+2. **Frontend setup**:
+   ```bash
+   cd frontend
+   npm install
+   ```
+
+3. **Start Redis** (Docker):
+   ```bash
+   docker run -d --name redis -p 6379:6379 redis:7-alpine
+   ```
+
+4. **Start services**:
+   ```bash
+   # Terminal 1: Backend
+   cd backend && python -m uvicorn main:app --reload
+   
+   # Terminal 2: Celery Worker
+   cd backend && celery -A core.celery_app worker --loglevel=info
+   
+   # Terminal 3: Frontend
+   cd frontend && npm run dev
+   ```
+
+### Option 3: Docker Compose
 
 ```bash
-# Using make
-make install
-
-# Or directly with pip
-pip install -r requirements.txt
+docker-compose up -d
 ```
 
-### 3. Set up environment variables
+This starts all services:
+- Redis on port 6379
+- Backend on port 8000
+- Frontend on port 3000
+- Celery worker and beat scheduler
+
+## ⚙️ Configuration
+
+### Environment Variables
+
+Copy `.env.example` to `.env` and customize:
 
 ```bash
-# Copy the example environment file
 cp .env.example .env
-
-# Edit .env with your actual credentials
-# nano .env  # or your preferred editor
 ```
 
-### Required environment variables:
+Key configuration options:
 
-- `MEXC_API_KEY` - Your MEXC API key
-- `MEXC_SECRET` - Your MEXC API secret
-- `TELEGRAM_BOT_TOKEN` - Your Telegram bot token
-- `TELEGRAM_CHAT_ID` - Your Telegram chat ID
-- `DEFAULT_SYMBOL` - Trading pair (e.g., BTCUSDT)
-- `INTERVAL` - Candle interval (1m, 5m, 15m, 30m, 60m, 4h, 1d, 1w, 1M)
-- `FAST_EMA` - Fast EMA period (default: 12)
-- `SLOW_EMA` - Slow EMA period (default: 26)
-- `LOG_LEVEL` - Logging level (default: INFO)
+#### Backend Settings
+- `REDIS_URL` - Redis connection URL
+- `WHISPER_MODEL_SIZE` - Whisper model size (tiny, base, small, medium, large)
+- `WHISPER_DEVICE` - Processing device (cpu, cuda)
+- `TRANSLATION_PROVIDER` - Translation service (googletrans, transformers)
 
-## Usage
+#### Frontend Settings
+- `NEXT_PUBLIC_API_URL` - Backend API URL
+- `NEXT_PUBLIC_MAX_FILE_SIZE` - Maximum upload file size
 
-### Run the bot
+See `.env.example` for all available options.
 
-```bash
-# Using make
-make run
+### Storage Configuration
 
-# Using the run script
-./run.sh
+The application uses three main storage directories:
+- `storage/uploads/` - Temporary upload storage
+- `storage/media/` - Permanent media storage
+- `storage/outputs/` - Processing results and subtitles
 
-# Using python directly (with PYTHONPATH set)
-export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
-python -m bot.main
-```
+## 🎯 Usage
 
-## Development
+### Web Interface
 
-### Install development dependencies
+1. **Upload Files**: Drag and drop or select audio/video files
+2. **Configure Processing**: Choose source and target languages
+3. **Monitor Progress**: Real-time task status updates
+4. **Download Results**: Access transcriptions and subtitles
 
-```bash
-make install-dev
-```
+### API Usage
 
-### Run tests
-
-```bash
-make test
-```
-
-### Format code
-
-```bash
-make format
-```
-
-### Run linting
-
-```bash
-make lint
-```
-
-### Clean up cache
-
-```bash
-make clean
-```
-
-## Project Structure
-
-```
-mexc-ema-bot/
-├── src/
-│   └── bot/
-│       ├── __init__.py          # Package initialization
-│       ├── __main__.py          # Main entry point for python -m bot
-│       ├── main.py              # Main bot class and entry function
-│       ├── config.py            # Configuration management
-│       ├── logger.py            # Logging setup
-│       └── mexc_client.py       # MEXC API client
-├── tests/
-│   └── test_mexc_client.py      # Unit tests for MEXC client
-├── examples/
-│   └── test_mexc_client.py      # Example usage of MEXC client
-├── requirements.txt             # Python dependencies
-├── .env.example                 # Example environment variables
-├── Makefile                     # Development commands
-├── run.sh                       # Bash run script
-├── .gitignore                   # Git ignore rules
-└── README.md                    # This file
-```
-
-## Architecture
-
-### Configuration (`config.py`)
-
-Loads environment variables from `.env` file and provides them as class attributes. Includes validation for required variables.
-
-### Logging (`logger.py`)
-
-Centralized logging setup with support for:
-- Console output with formatted messages
-- Rotating file handlers (optional)
-- Configurable log levels
-
-### Main Bot (`main.py`)
-
-Main bot class that:
-- Initializes from configuration
-- Handles graceful shutdown via signal handlers (SIGINT, SIGTERM)
-- Provides a main execution loop
-- Implements proper error handling
-
-### MEXC Client (`mexc_client.py`)
-
-Comprehensive client for interacting with MEXC REST API:
-
-#### Features
-- **Async HTTP Client**: Built on `httpx` for high-performance async operations
-- **Kline Data Fetching**: Retrieve candlestick data for any trading pair and interval
-- **Robust Error Handling**: 
-  - Automatic retry with exponential backoff
-  - Rate limit detection and handling
-  - Network error recovery
-- **Rate Limiting**: Respects MEXC API rate limits
-- **Structured Logging**: Detailed logging of all operations and errors
-- **Data Models**: Type-safe `KlineData` dataclass for candlestick data
-
-#### Components
-
-##### MexcClient
-Main client class for API interactions:
-- `get_klines()` - Fetch historical kline/candlestick data
-- `get_latest_price()` - Get the latest close price for a symbol
-- Configurable retry logic and timeouts
-- Context manager support for proper resource cleanup
-
-##### KlinePoller
-Continuous polling loop for real-time data:
-- Polls for new kline data at configurable intervals
-- Invokes callback functions with new data
-- Supports both sync and async callbacks
-- Tracks latest data to avoid duplicate processing
-- Graceful start/stop with proper cleanup
-
-##### KlineData
-Structured dataclass representing candlestick data:
-- All OHLCV (Open, High, Low, Close, Volume) fields
-- Timestamp conversion utilities
-- Easy serialization to dict
-- Type-safe construction from API responses
-
-#### Usage Example
-
+#### Upload and Process File
 ```python
-from bot.mexc_client import MexcClient, KlinePoller
+import requests
 
-# Simple data fetch
-async with MexcClient() as client:
-    klines = await client.get_klines("BTCUSDT", "60m", limit=100)
-    for kline in klines:
-        print(f"{kline.close_time_dt}: {kline.close}")
+# Upload file
+with open('audio.mp3', 'rb') as f:
+    files = {'file': f}
+    data = {'language': 'en', 'translate_to': 'es'}
+    response = requests.post('http://localhost:8000/api/v1/files/upload', 
+                           files=files, data=data)
+    task_id = response.json()['task_id']
 
-# Continuous polling
-def on_new_data(klines):
-    latest = klines[-1]
-    print(f"New price: {latest.close}")
-
-async with MexcClient() as client:
-    poller = KlinePoller(
-        client=client,
-        symbol="BTCUSDT",
-        interval="60m",
-        poll_interval=60,
-        callback=on_new_data
-    )
-    await poller.start()
-    # ... bot logic ...
-    await poller.stop()
+# Check status
+status_response = requests.get(f'http://localhost:8000/api/v1/tasks/status/{task_id}')
+print(status_response.json())
 ```
 
-#### Configuration Options
+#### Health Checks
+```python
+# Basic health check
+response = requests.get('http://localhost:8000/api/v1/health/')
 
-The client supports the following configuration via environment variables:
-- `MEXC_BASE_URL` - API base URL (default: https://api.mexc.com)
-- `KLINE_LIMIT` - Number of klines per request (default: 100, max: 1000)
-- `POLL_INTERVAL` - Seconds between polls (default: 60)
-- `MAX_RETRIES` - Max retry attempts for failed requests (default: 3)
-- `RETRY_DELAY` - Initial retry delay in seconds (default: 5)
-- `REQUEST_TIMEOUT` - Request timeout in seconds (default: 30)
+# Detailed health check with dependencies
+response = requests.get('http://localhost:8000/api/v1/health/detailed')
+```
 
-## Signal Handling
+## 🔧 Development
 
-The bot gracefully handles shutdown signals:
-- `SIGINT` (Ctrl+C) - Stops the bot
-- `SIGTERM` - Stops the bot
-
-## Logging
-
-Log messages are output to console and optionally to a file. The log level can be configured via the `LOG_LEVEL` environment variable.
-
-Example log file location: `logs/bot.log` (when enabled via `LOG_FILE` environment variable)
-
-## Testing
-
-### Run Unit Tests
+### Available Make Commands
 
 ```bash
-# Run all tests
+make help              # Show all available commands
+make setup-env         # Create environment files
+make install           # Install all dependencies
+make dev               # Start development servers
+make test              # Run all tests
+make lint              # Run linting
+make format            # Format code
+make docker-up         # Start with Docker Compose
+make clean             # Clean up generated files
+```
+
+### Project Structure
+
+#### Backend (`backend/`)
+- `main.py` - FastAPI application entry point
+- `api/routes/` - API endpoints (files, tasks, health)
+- `core/` - Configuration and Celery setup
+- `workers/` - Background processing tasks
+
+#### Frontend (`frontend/`)
+- `pages/` - Next.js pages and API routes
+- `components/` - React components
+- `utils/` - API utilities and helpers
+
+### Adding New Features
+
+1. **Backend**: Add new routes in `backend/api/routes/`
+2. **Workers**: Create new tasks in `backend/workers/`
+3. **Frontend**: Add components in `frontend/components/`
+4. **Storage**: Extend storage management in `backend/core/storage.py`
+
+## 🐳 Docker Deployment
+
+### Development
+```bash
+docker-compose up -d
+```
+
+### Production
+```bash
+docker-compose -f docker-compose.prod.yml up -d
+```
+
+### Services
+- **Redis**: Message broker and caching
+- **Backend**: FastAPI application
+- **Celery Worker**: Background task processor
+- **Frontend**: Next.js web interface
+
+## 🧪 Testing
+
+### Run All Tests
+```bash
 make test
-
-# Run specific test file
-pytest tests/test_mexc_client.py -v
-
-# Run with coverage
-pytest --cov=bot tests/
 ```
 
-### Run Examples
-
-The `examples/` directory contains example scripts demonstrating client usage:
-
+### Backend Tests
 ```bash
-# Make sure .env is configured first
-python examples/test_mexc_client.py
+cd backend && python -m pytest
 ```
 
-## Future Implementation
+### Frontend Tests
+```bash
+cd frontend && npm test
+```
 
-The following features are marked for implementation:
-- ✅ MEXC API connection and data streaming
-- EMA indicator calculation
-- Signal generation and trading logic
-- Telegram notification system
-- Order placement and management
+## 📝 API Documentation
 
-## License
+When running the backend locally, visit:
+- **Swagger UI**: http://localhost:8000/docs
+- **ReDoc**: http://localhost:8000/redoc
 
-[Add your license information here]
+### Key Endpoints
 
-## Support
+#### Files
+- `POST /api/v1/files/upload` - Upload audio/video file
+- `GET /api/v1/files/list` - List uploaded files
+- `DELETE /api/v1/files/{file_id}` - Delete file
 
-[Add support information here]
+#### Tasks
+- `GET /api/v1/tasks/status/{task_id}` - Check task status
+- `POST /api/v1/tasks/cancel/{task_id}` - Cancel running task
+- `GET /api/v1/tasks/active` - List active tasks
+
+#### Health
+- `GET /api/v1/health/` - Basic health check
+- `GET /api/v1/health/detailed` - Detailed system status
+
+## 🔧 Troubleshooting
+
+### Redis Connection Issues
+
+**Windows**: Use WSL or Docker
+```bash
+# WSL
+sudo service redis-server start
+
+# Docker
+docker run -d --name redis -p 6379:6379 redis:7-alpine
+```
+
+**macOS**:
+```bash
+brew install redis
+brew services start redis
+```
+
+**Linux**:
+```bash
+sudo apt install redis-server  # Ubuntu/Debian
+sudo systemctl start redis     # Systemd systems
+```
+
+### FFmpeg Installation
+
+**Windows**: Download from [ffmpeg.org](https://ffmpeg.org/download.html)
+**macOS**: `brew install ffmpeg`
+**Linux**: `sudo apt install ffmpeg`
+
+### GPU Support
+
+To enable GPU acceleration for Whisper:
+
+1. Install CUDA-compatible drivers
+2. Set environment variables:
+   ```bash
+   export ENABLE_GPU=true
+   export CUDA_VISIBLE_DEVICES=0
+   export WHISPER_DEVICE=cuda
+   ```
+
+### Common Issues
+
+**Port already in use**:
+```bash
+# Find process using port
+lsof -i :8000
+# Kill process
+kill -9 <PID>
+```
+
+**Permission errors on storage directories**:
+```bash
+chmod -R 755 storage/
+```
+
+**Redis connection refused**:
+```bash
+# Check Redis status
+redis-cli ping
+# Restart Redis service
+make redis-stop && make redis-start
+```
+
+## 🤝 Contributing
+
+1. Fork the repository
+2. Create a feature branch (`git checkout -b feature/amazing-feature`)
+3. Make your changes
+4. Add tests for new functionality
+5. Run linting and tests (`make lint test`)
+6. Commit your changes (`git commit -m 'Add amazing feature'`)
+7. Push to the branch (`git push origin feature/amazing-feature`)
+8. Open a Pull Request
+
+## 📄 License
+
+This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+
+## 🙏 Acknowledgments
+
+- [faster-whisper](https://github.com/guillaumekln/faster-whisper) for speech recognition
+- [FastAPI](https://fastapi.tiangolo.com/) for the modern Python web framework
+- [Next.js](https://nextjs.org/) for the React framework
+- [Celery](https://celeryproject.org/) for distributed task processing
+- [Redis](https://redis.io/) for the message broker

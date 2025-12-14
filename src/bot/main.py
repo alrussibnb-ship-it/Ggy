@@ -6,6 +6,7 @@ from typing import Optional
 
 from bot.config import BotConfig
 from bot.logger import setup_logger, get_logger
+from bot.fastapi_app import SystemValidator
 
 
 logger = setup_logger(__name__)
@@ -25,9 +26,60 @@ class MexcEmaBot:
         self.logger = get_logger(__name__)
         self._running = False
 
+        # Validate system configuration
+        self._validate_system_config()
+
         # Register signal handlers for graceful shutdown
         signal.signal(signal.SIGINT, self._signal_handler)
         signal.signal(signal.SIGTERM, self._signal_handler)
+
+    def _validate_system_config(self) -> None:
+        """Validate GPU, CUDA, and FFmpeg configuration."""
+        try:
+            validator = SystemValidator()
+            system_info = validator.validate_system()
+            
+            # Log GPU status
+            if system_info.gpu_info.cuda_available:
+                self.logger.info(f"✅ GPU acceleration available: {system_info.gpu_info.gpu_name}")
+                self.logger.info(f"✅ CUDA version: {system_info.gpu_info.cuda_version}")
+                if system_info.gpu_info.gpu_memory_total:
+                    memory_gb = system_info.gpu_info.gpu_memory_total / (1024**3)
+                    self.logger.info(f"✅ GPU memory: {memory_gb:.1f} GB")
+            else:
+                self.logger.warning("⚠️ GPU acceleration not available, using CPU")
+                
+            # Log FFmpeg status
+            if system_info.ffmpeg_info.ffmpeg_available:
+                self.logger.info(f"✅ FFmpeg available: {system_info.ffmpeg_info.ffmpeg_version}")
+                if system_info.ffmpeg_info.libass_support:
+                    self.logger.info("✅ FFmpeg libass support: enabled")
+                if system_info.ffmpeg_info.subtitle_support:
+                    self.logger.info("✅ FFmpeg subtitle support: enabled")
+            else:
+                self.logger.error(f"❌ FFmpeg not available: {system_info.ffmpeg_info.error_message}")
+                
+            # Log CUDA toolkit status
+            if system_info.cuda_info.nvcc_available:
+                self.logger.info(f"✅ CUDA toolkit available: {system_info.cuda_info.cuda_version}")
+            else:
+                self.logger.warning(f"⚠️ CUDA toolkit not available: {system_info.cuda_info.error_message}")
+                
+            # Determine processing mode
+            if system_info.fallback_to_cpu:
+                self.logger.warning("🤖 System configured for CPU processing")
+            else:
+                self.logger.info("🚀 System configured for GPU acceleration")
+                
+            # Check for configuration conflicts
+            if not self.config.gpu_enabled and system_info.gpu_info.cuda_available:
+                self.logger.info("GPU available but disabled via configuration")
+            elif self.config.force_cpu and system_info.gpu_info.cuda_available:
+                self.logger.info("GPU available but force CPU mode enabled")
+                
+        except Exception as e:
+            self.logger.warning(f"System validation failed: {e}")
+            self.logger.info("Continuing with default configuration")
 
     def _signal_handler(self, signum: int, frame: Optional[object]) -> None:
         """

@@ -64,6 +64,26 @@ class BotConfig:
         self.log_level: str = self._get_required_env("LOG_LEVEL", default="INFO")
         self.log_file: Optional[str] = os.getenv("LOG_FILE")
 
+        # FastAPI Configuration
+        self.fastapi_host: str = self._get_required_env("FASTAPI_HOST", default="127.0.0.1")
+        self.fastapi_port: int = self._get_env_as_int("FASTAPI_PORT", default=8000)
+        self.fastapi_reload: bool = os.getenv("FASTAPI_RELOAD", "false").lower() == "true"
+
+        # GPU/CUDA Configuration
+        self.gpu_enabled: bool = os.getenv("GPU_ENABLED", "true").lower() == "true"
+        self.cuda_device: int = self._get_env_as_int("CUDA_DEVICE", default=0)
+        self.force_cpu: bool = os.getenv("FORCE_CPU", "false").lower() == "true"
+
+        # FFmpeg Configuration
+        self.ffmpeg_path: Optional[str] = os.getenv("FFMPEG_PATH")
+        self.ffprobe_path: Optional[str] = os.getenv("FFPROBE_PATH")
+        self.ffmpeg_timeout: int = self._get_env_as_int("FFMPEG_TIMEOUT", default=30)
+
+        # System Configuration
+        self.nvcc_timeout: int = self._get_env_as_int("NVCC_TIMEOUT", default=10)
+        self.gpu_memory_fraction: Optional[float] = self._get_env_as_float("GPU_MEMORY_FRACTION")
+        self.enable_gpu_monitoring: bool = os.getenv("ENABLE_GPU_MONITORING", "true").lower() == "true"
+
     @staticmethod
     def _get_required_env(key: str, default: Optional[str] = None) -> str:
         """

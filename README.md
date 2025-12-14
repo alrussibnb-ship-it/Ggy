@@ -4,6 +4,7 @@ An automated trading bot for the MEXC exchange using Exponential Moving Average 
 
 ## Features
 
+### Core Trading Features
 - Automated trading based on EMA crossover signals
 - Real-time market data from MEXC exchange
 - Telegram notifications for trading signals
@@ -11,10 +12,37 @@ An automated trading bot for the MEXC exchange using Exponential Moving Average 
 - Centralized logging with configurable levels
 - Graceful shutdown handling
 
+### GPU Acceleration & Media Processing
+- **NVIDIA CUDA Support**: Automatic GPU detection and utilization
+- **FFmpeg Integration**: Native FFmpeg with libass and subtitle support
+- **Intelligent Fallback**: Automatic CPU fallback when GPU unavailable
+- **System Validation**: Comprehensive hardware/software validation
+- **Performance Monitoring**: Real-time GPU utilization tracking
+
+### FastAPI Web Interface
+- **REST API**: Full FastAPI application with multiple endpoints
+- **System Monitoring**: GPU, CUDA, and FFmpeg status monitoring
+- **Health Checks**: Application health and readiness endpoints
+- **Configuration Validation**: Dynamic system configuration validation
+- **Web-based Interface**: Browser-accessible system information
+
 ## Requirements
 
+### Minimum Requirements
 - Python 3.8+
 - pip (Python package manager)
+- 4GB RAM
+- Internet connection
+
+### GPU Acceleration (Optional)
+- NVIDIA GPU with CUDA Compute Capability 6.1+
+- NVIDIA CUDA Toolkit 11.0+
+- NVIDIA GPU drivers
+
+### FFmpeg Support (Optional)
+- FFmpeg with libass support
+- Windows: Native Windows build or WSL
+- Linux: Package manager installation
 
 ## Installation
 
@@ -59,7 +87,7 @@ cp .env.example .env
 
 ## Usage
 
-### Run the bot
+### Run the Trading Bot
 
 ```bash
 # Using make
@@ -71,6 +99,32 @@ make run
 # Using python directly (with PYTHONPATH set)
 export PYTHONPATH="${PYTHONPATH}:$(pwd)/src"
 python -m bot.main
+```
+
+### Run FastAPI Web Interface
+
+```bash
+# Start FastAPI server
+make fastapi
+
+# Or using python directly
+python -m bot.fastapi_main
+
+# Access web interface
+open http://localhost:8000
+```
+
+### System Validation
+
+```bash
+# Run comprehensive system validation
+make test-system
+
+# Quick validation check
+make validate
+
+# GPU setup guide
+make setup-gpu
 ```
 
 ## Development
